@@ -23,6 +23,7 @@ namespace EbayParser {
 
 	public class EbayTransaction {
 		public DateTime date;
+		public DateTime time;
 		public string sellerName;
 		public string originalCurrency;
 		public float usdValue;

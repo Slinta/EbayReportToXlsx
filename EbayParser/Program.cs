@@ -83,9 +83,19 @@ namespace EbayParser {
 					}
 				}
 			}
-			for (int i = 0; i < fieldsInPaypalReport.Length; i++) {
-				sheet.SetValue(1, i + 1, fieldsInPaypalReport[i].Name);
+
+			FieldInfo[] fieldsInEBayReport = typeof(EbayTransaction).GetFields();
+			FieldInfo[] fieldsInRefund = typeof(Refund).GetFields();
+
+			for (int i = 0; i < fieldsInEBayReport.Length + fieldsInRefund.Length; i++) {
+				if (i < fieldsInEBayReport.Length) {
+					sheet.SetValue(1, i + 1, fieldsInEBayReport[i].Name);
+				}
+				else {
+					sheet.SetValue(1, i + 1, fieldsInRefund[i - fieldsInEBayReport.Length].Name);
+				}
 			}
+
 			
 
 			for (int i = 1; i < linesOfCSV.Length; i++) {
@@ -114,7 +124,8 @@ namespace EbayParser {
 				switch (payPalReports[i].Type) {
 					case "eBay Auction Payment": {
 						EbayTransaction purchase = new EbayTransaction();
-						purchase.date = DateTime.ParseExact(payPalReports[i].Date + payPalReports[i].Time, "dd. MM. yyyyHH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+						purchase.date = DateTime.ParseExact(payPalReports[i].Date, "dd. MM. yyyy", System.Globalization.CultureInfo.InvariantCulture);
+						purchase.time = DateTime.ParseExact(payPalReports[i].Time, "HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
 						purchase.originalCurrency = payPalReports[i].Currency;
 						if (purchase.originalCurrency != "USD") {
 							purchase.usdValue = GetUsdValue(i);
@@ -174,22 +185,33 @@ namespace EbayParser {
 			
 			for (int i = 0; i < purchases.Count; i++) {
 				int line = 2 + i;
-				sheet.SetValue(line, 1, purchases[i].date.ToShortDateString());
-				sheet.SetValue(line, 2, purchases[i].date.ToShortTimeString());
+				for (int j = 0; j < fieldsInEBayReport.Length + fieldsInRefund.Length; j++) {
+					if (j < fieldsInEBayReport.Length) {
+						sheet.SetValue(line, j + 1, fieldsInEBayReport[j].GetValue(purchases[i]));
+					}
+					else if(purchases[i].refund != null) {
+						sheet.SetValue(line, j + 1, fieldsInRefund[j - fieldsInEBayReport.Length].GetValue(purchases[i].refund));
+					}
+					
+				}
+
+				
+				//sheet.SetValue(line, 1, purchases[i].date.ToShortDateString());
+				//sheet.SetValue(line, 2, purchases[i].date.ToShortTimeString());
 
 
-				sheet.SetValue(line, 3, purchases[i].itemName);
-				sheet.SetValue(line, 4, purchases[i].originalCurrency);
-				sheet.SetValue(line, 5, purchases[i].sellerName);
-				sheet.SetValue(line, 6, purchases[i].usdShippingCost);
-				sheet.SetValue(line, 7, purchases[i].usdValue);
-				if (purchases[i].refund == null) {
-					sheet.SetValue(line, 8, "NoRefunds");
-				}
-				else {
-					sheet.SetValue(line, 9, purchases[i].refund.usdValue);
-					sheet.SetValue(line, 10, purchases[i].refund.date);
-				}
+				//sheet.SetValue(line, 3, purchases[i].itemName);
+				//sheet.SetValue(line, 4, purchases[i].originalCurrency);
+				//sheet.SetValue(line, 5, purchases[i].sellerName);
+				//sheet.SetValue(line, 6, purchases[i].usdShippingCost);
+				//sheet.SetValue(line, 7, purchases[i].usdValue);
+				//if (purchases[i].refund == null) {
+				//	sheet.SetValue(line, 8, "NoRefunds");
+				//}
+				//else {
+				//	sheet.SetValue(line, 9, purchases[i].refund.usdValue);
+				//	sheet.SetValue(line, 10, purchases[i].refund.date);
+				//}
 
 
 			}
